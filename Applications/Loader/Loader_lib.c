@@ -1,3 +1,6 @@
+#ifndef __LOADER_LIB_C
+#define __LOADER_LIB_C
+
 #include <Library/DevicePathLib.h>
 #include <Library/UefiLib.h>
 #include <Protocol/DevicePath.h>
@@ -96,3 +99,20 @@ void init_protocol() {
         L"SimpleFileSystemProtocol",
         gEfiSimpleFileSystemProtocolGuid);
 }
+
+INT64 strcmp_8(CHAR8 *dest, CHAR8 *src) {
+    while (*dest != '\0' && *src != '\0') {
+        if (*dest != *src) {
+            return 1;
+        }
+        dest ++;
+        src ++;
+    }
+    if (*dest == *src && *dest == '\0') {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+#endif

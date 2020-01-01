@@ -17,6 +17,7 @@
   UefiApplicationEntryPoint
   DevicePathLib
   UefiBootServicesTableLib
+  FileHandleLib
 
 [Guids]
   gEfiFileInfoGuid

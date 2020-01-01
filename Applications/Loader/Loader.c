@@ -10,7 +10,20 @@
 #include <Protocol/SimpleFileSystem.h>
 #include <Guid/FileInfo.h>
 
+#include <Library/BaseMemoryLib.h>
+#include <Library/PrintLib.h>
+
+#include <elf.h>
+
 #include "Loader_lib.c"
+#include "LoadElf.c"
+
+
+void wait_key() {
+    gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, NULL);
+    EFI_INPUT_KEY buf;
+    gST->ConIn->ReadKeyStroke(gST->ConIn, &buf);
+}
 
 
 // const CHAR16* get_memory_type(EFI_MEMORY_TYPE type) {
@@ -113,27 +126,8 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE ImageHandle,
         frame_buffer[i] = 0xff;
     }
 
-    EFI_FILE_PROTOCOL *kernel_file;
-    status = root_dir->Open(root_dir, &kernel_file, L"\\kernel.bin", EFI_FILE_MODE_READ, 0);
-    perror(status, L"failed to open kernel file", TRUE);
-
-    VOID *kernel_buffer;
-
-    UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
-    UINT8 file_info_buffer[file_info_size];
-    status = kernel_file->GetInfo(kernel_file, &gEfiFileInfoGuid, &file_info_size, file_info_buffer);
-    perror(status, L"get status", TRUE);
-
-    EFI_FILE_INFO *file_info = (EFI_FILE_INFO*)file_info_buffer;
-    UINTN file_size = file_info->Size;
-
-    status = gBS->AllocatePool(EfiLoaderData, file_size, &kernel_buffer);
-    perror(status, L"allocate pool", TRUE);
-
-    status = kernel_file->Read(kernel_file, &file_size, kernel_buffer);
-    perror(status, L"read file", TRUE);
-
-
+    VOID *entry;
+    load_elf(&entry, root_dir, L"kernel.elf");
 
     status = gBS->GetMemoryMap(&memmap.map_size, (EFI_MEMORY_DESCRIPTOR*)memmap.buffer, &memmap.map_key, &memmap.descriptor_size, &memmap.descriptor_version);
     perror(status, L"get memory map", TRUE);
@@ -141,13 +135,8 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE ImageHandle,
     perror(status, L"exit boot service", TRUE);
 
     typedef void EntryPoint(void *, void*);
-    ((EntryPoint*)kernel_buffer)(frame_buffer, &memmap);
+    ((EntryPoint*)entry)(frame_buffer, &memmap);
 
-    for (UINTN i = 0; i < gop->Mode->FrameBufferSize; i ++) {
-        if (i < 1024 * 768) {
-            frame_buffer[i] = 0x44 ;
-        }
-    }
 
     while(1) {
         __asm__ volatile("hlt");
