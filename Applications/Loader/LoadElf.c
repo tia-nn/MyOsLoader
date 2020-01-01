@@ -22,7 +22,7 @@
 
 
 
-EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *filename) {
+EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *filename, CHAR8 *entry_point_symbol) {
 
     EFI_STATUS status;
 
@@ -86,25 +86,30 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
     }
 
 
-    Elf64_Shdr text_section, rela_dyn_section, rela_plt_section, symtab_section;
+    Elf64_Shdr rela_dyn_section, rela_plt_section, dynsym_section,dynstr_section;// text_section, strtab_section, 
 
     for (UINTN i = 0; i < elf_header->e_shnum; i ++) {
         Elf64_Shdr section_header = section_header_table[i];
 
         CHAR8* sec_name = section_name_table + section_header.sh_name;
 
-        if (strcmp_8(sec_name, ".text") == 0) {
-            text_section = section_header;
-        } else if (strcmp_8(sec_name, ".rela.dyn") == 0) {
+        // if (strcmp_8(sec_name, ".text") == 0) {
+        //     text_section = section_header;
+        // } else 
+        if (strcmp_8(sec_name, ".rela.dyn") == 0) {
             rela_dyn_section = section_header;
         } else if (strcmp_8(sec_name, ".rela.plt") == 0) {
             rela_plt_section = section_header;
         } else if (strcmp_8(sec_name, ".dynsym") == 0) {
-            symtab_section = section_header;
+            dynsym_section = section_header;
+        // } else if (strcmp_8(sec_name, ".strtab") == 0) {
+        //     strtab_section = section_header;
+        } else if (strcmp_8(sec_name, ".dynstr") == 0) {
+            dynstr_section = section_header;
         }
     }
 
-    Elf64_Sym *sym = (Elf64_Sym*)(file_buffer + symtab_section.sh_offset);
+    Elf64_Sym *sym = (Elf64_Sym*)(file_buffer + dynsym_section.sh_offset);
     Elf64_Rela *rela_dyn = (Elf64_Rela*)(file_buffer + rela_dyn_section.sh_offset);
     Elf64_Rela *rela_plt = (Elf64_Rela*)(file_buffer + rela_plt_section.sh_offset);
 
@@ -124,9 +129,21 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
         *(uint64_t*)to = (uint64_t)(buffer + s.st_value);
     }
 
+    UINT64 entry_offset = 0;
+    for (UINTN i = 0; i < dynsym_section.sh_size / sizeof(Elf64_Sym); i ++) {
+        Elf64_Sym s = sym[i];
+
+        if (ELF64_ST_TYPE(s.st_info) == STT_FUNC) {
+            CHAR8 *sym_name = ((CHAR8*)(file_buffer + dynstr_section.sh_offset)) + s.st_name;
+            if (strcmp_8(sym_name, entry_point_symbol) == 0) {
+                entry_offset = s.st_value;
+            }
+        }
+    }
+
     gBS->FreePool(file_buffer);
 
-    *entry_point_buffer = buffer + text_section.sh_addr;
+    *entry_point_buffer = buffer + entry_offset;
 
     return EFI_SUCCESS;
 }

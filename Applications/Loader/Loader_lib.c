@@ -28,6 +28,15 @@ EFI_DEVICE_PATH_FROM_TEXT_PROTOCOL *gDPFTP;
 EFI_DEVICE_PATH_UTILITIES_PROTOCOL *gDPUP;
 EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *gSFSP;
 
+
+
+void wait_key() {
+    gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, NULL);
+    EFI_INPUT_KEY buf;
+    gST->ConIn->ReadKeyStroke(gST->ConIn, &buf);
+}
+
+
 void print_status(IN EFI_STATUS status) {
     switch(status) {
     case EFI_SUCCESS:

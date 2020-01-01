@@ -19,13 +19,6 @@
 #include "LoadElf.c"
 
 
-void wait_key() {
-    gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, NULL);
-    EFI_INPUT_KEY buf;
-    gST->ConIn->ReadKeyStroke(gST->ConIn, &buf);
-}
-
-
 // const CHAR16* get_memory_type(EFI_MEMORY_TYPE type) {
 //     switch (type) {
 //         case EfiReservedMemoryType:         return L"EfiReservedMemoryType     ";
@@ -127,7 +120,7 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE ImageHandle,
     }
 
     VOID *entry;
-    load_elf(&entry, root_dir, L"kernel.elf");
+    load_elf(&entry, root_dir, L"kernel.elf", "_start");
 
     status = gBS->GetMemoryMap(&memmap.map_size, (EFI_MEMORY_DESCRIPTOR*)memmap.buffer, &memmap.map_key, &memmap.descriptor_size, &memmap.descriptor_version);
     perror(status, L"get memory map", TRUE);
