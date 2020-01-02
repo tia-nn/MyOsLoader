@@ -14,14 +14,6 @@
 
 #include <stdint.h>
 
-typedef struct MemoryMap {
-  unsigned long long buffer_size;
-  void* buffer;
-  unsigned long long map_size;
-  unsigned long long map_key;
-  unsigned long long descriptor_size;
-  uint32_t descriptor_version;
-} MemoryMap;
 
 EFI_DEVICE_PATH_TO_TEXT_PROTOCOL *gDPTTP;
 EFI_DEVICE_PATH_FROM_TEXT_PROTOCOL *gDPFTP;
