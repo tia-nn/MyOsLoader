@@ -22,7 +22,7 @@
 
 
 
-EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *filename, CHAR8 *entry_point_symbol) {
+EFI_STATUS load_elf(VOID **buffer_buffer, VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *filename, CHAR8 *entry_point_symbol) {
 
     EFI_STATUS status;
 
@@ -57,8 +57,7 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
 
     CHAR8* section_name_table = (CHAR8*)(file_buffer + section_header_table[elf_header->e_shstrndx].sh_offset);
 
-    UINT64 first_offset, last_offset;
-    first_offset = UINTPTR_MAX;
+    UINT64 last_offset;
     last_offset = 0;
     for (UINTN i = 0; i < elf_header->e_phnum; i ++) {
         Elf64_Phdr program_header = program_header_table[i];
@@ -66,8 +65,7 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
             continue;
         }
 
-        first_offset = first_offset > program_header.p_vaddr ? program_header.p_vaddr : first_offset;
-        last_offset = last_offset < program_header.p_vaddr + program_header.p_memsz ? program_header.p_vaddr + program_header.p_memsz : last_offset;
+        last_offset = MAX(last_offset, program_header.p_vaddr + program_header.p_memsz);
     }
 
     VOID *buffer;
@@ -109,12 +107,12 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
         }
     }
 
-    Elf64_Sym *sym = (Elf64_Sym*)(file_buffer + dynsym_section.sh_offset);
+    Elf64_Sym *sym_table = (Elf64_Sym*)(file_buffer + dynsym_section.sh_offset);
     Elf64_Rela *rela_dyn = (Elf64_Rela*)(file_buffer + rela_dyn_section.sh_offset);
     Elf64_Rela *rela_plt = (Elf64_Rela*)(file_buffer + rela_plt_section.sh_offset);
 
     for (UINTN i = 0; i < rela_dyn_section.sh_size / sizeof(Elf64_Rela); i ++) {
-        Elf64_Sym s = sym[ELF64_R_SYM(rela_dyn[i].r_info)];
+        Elf64_Sym s = sym_table[ELF64_R_SYM(rela_dyn[i].r_info)];
         Elf64_Rela r = rela_dyn[i];
 
         void *to = buffer + r.r_offset;
@@ -122,7 +120,7 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
     }
 
     for (UINTN i = 0; i < rela_plt_section.sh_size / sizeof(Elf64_Rela); i ++) {
-        Elf64_Sym s = sym[ELF64_R_SYM(rela_plt[i].r_info)];
+        Elf64_Sym s = sym_table[ELF64_R_SYM(rela_plt[i].r_info)];
         Elf64_Rela r = rela_plt[i];
 
         void *to = buffer + r.r_offset;
@@ -131,7 +129,7 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
 
     UINT64 entry_offset = 0;
     for (UINTN i = 0; i < dynsym_section.sh_size / sizeof(Elf64_Sym); i ++) {
-        Elf64_Sym s = sym[i];
+        Elf64_Sym s = sym_table[i];
 
         if (ELF64_ST_TYPE(s.st_info) == STT_FUNC) {
             CHAR8 *sym_name = ((CHAR8*)(file_buffer + dynstr_section.sh_offset)) + s.st_name;
@@ -144,6 +142,7 @@ EFI_STATUS load_elf(VOID **entry_point_buffer, EFI_FILE_PROTOCOL *dir, CHAR16 *f
     gBS->FreePool(file_buffer);
 
     *entry_point_buffer = buffer + entry_offset;
+    *buffer_buffer = buffer;
 
     return EFI_SUCCESS;
 }

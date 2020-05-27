@@ -32,6 +32,7 @@
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
 
   FileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
+  AcpiTableDxe|MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
 
 [Components]
   TieOSLoaderPkg/Applications/Loader/Loader.inf

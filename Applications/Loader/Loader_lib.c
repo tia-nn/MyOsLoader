@@ -116,4 +116,56 @@ INT64 strcmp_8(CHAR8 *dest, CHAR8 *src) {
     }
 }
 
+BOOLEAN guid_equal(EFI_GUID *a, EFI_GUID *b) {
+    BOOLEAN result = TRUE;
+    result = result && (a->Data1 == b->Data1);
+    result = result && (a->Data2 == b->Data2);
+    result = result && (a->Data3 == b->Data3);
+    for (UINTN i = 0; i < 8; i ++) {
+        result = result && (a->Data4[i] == b->Data4[i]);
+    }
+    return result;
+}
+
+
+const CHAR16* get_memory_type(EFI_MEMORY_TYPE type) {
+    switch (type) {
+        case EfiReservedMemoryType:         return L"EfiReservedMemoryType     ";
+        case EfiLoaderCode:                 return L"EfiLoaderCode             ";
+        case EfiLoaderData:                 return L"EfiLoaderData             ";
+        case EfiBootServicesCode:           return L"EfiBootServicesCode       ";
+        case EfiBootServicesData:           return L"EfiBootServicesData       ";
+        case EfiRuntimeServicesCode:        return L"EfiRuntimeServicesCode    ";
+        case EfiRuntimeServicesData:        return L"EfiRuntimeServicesData    ";
+        case EfiConventionalMemory:         return L"EfiConventionalMemory     ";
+        case EfiUnusableMemory:             return L"EfiUnusableMemory         ";
+        case EfiACPIReclaimMemory:          return L"EfiACPIReclaimMemory      ";
+        case EfiACPIMemoryNVS:              return L"EfiACPIMemoryNVS          ";
+        case EfiMemoryMappedIO:             return L"EfiMemoryMappedIO         ";
+        case EfiMemoryMappedIOPortSpace:    return L"EfiMemoryMappedIOPortSpace";
+        case EfiPalCode:                    return L"EfiPalCode                ";
+        case EfiPersistentMemory:           return L"EfiPersistentMemory       ";
+        case EfiMaxMemoryType:              return L"EfiMaxMemoryType          ";
+        default:                            return L"InvalidMemoryType         ";
+    }
+}
+
+
+// const CHAR16* get_pixel_format(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
+//     switch (fmt) {
+//         case PixelRedGreenBlueReserved8BitPerColor:
+//         return L"PixelRedGreenBlueReserved8BitPerColor";
+//         case PixelBlueGreenRedReserved8BitPerColor:
+//         return L"PixelBlueGreenRedReserved8BitPerColor";
+//         case PixelBitMask:
+//         return L"PixelBitMask";
+//         case PixelBltOnly:
+//         return L"PixelBltOnly";
+//         case PixelFormatMax:
+//         return L"PixelFormatMax";
+//         default:
+//         return L"InvalidPixelFormat";
+//     }
+// }
+
 #endif
